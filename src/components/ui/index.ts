@@ -9,3 +9,5 @@ export type { ProgressProps } from './Progress';
 
 export { Input } from './Input';
 export type { InputProps } from './Input';
+
+export { DemoDisclaimer } from './DemoDisclaimer';

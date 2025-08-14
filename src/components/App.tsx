@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/appStore';
 import { api } from '@/lib/api';
 import { exportPersonalRating, exportCompanyRating } from '@/lib/export';
+import { useDbStatus } from '@/hooks/useDbStatus';
+import { DemoDisclaimer } from './ui/DemoDisclaimer';
 
 import { InstructionScreen } from './screens/InstructionScreen';
 import { ComparisonScreen } from './screens/ComparisonScreen';
@@ -41,6 +43,17 @@ export function App() {
     totalComparisons: 0,
     averageComparisons: 0,
   });
+  
+  // Database status and disclaimer
+  const { isDemoMode, isLoading: statusLoading } = useDbStatus();
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  // Show disclaimer when in demo mode
+  useEffect(() => {
+    if (!statusLoading && isDemoMode) {
+      setShowDisclaimer(true);
+    }
+  }, [isDemoMode, statusLoading]);
 
   // Initialize app
   useEffect(() => {
@@ -250,54 +263,92 @@ export function App() {
   switch (screen) {
     case 'instructions':
       return (
-        <InstructionScreen
-          onStart={handleStartSession}
-          managerCount={managers.length || 20} // Default for demo
-          estimatedComparisons={estimatedComparisons}
-        />
+        <div className="relative min-h-screen">
+          <DemoDisclaimer 
+            isVisible={showDisclaimer}
+            onDismiss={() => setShowDisclaimer(false)}
+          />
+          <div className={showDisclaimer ? 'pt-16' : ''}>
+            <InstructionScreen
+              onStart={handleStartSession}
+              managerCount={managers.length || 20} // Default for demo
+              estimatedComparisons={estimatedComparisons}
+            />
+          </div>
+        </div>
       );
 
     case 'comparing':
       if (!currentPair) {
         return (
-          <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-secondary-600">Підготовка наступного порівняння...</p>
+          <div className="relative min-h-screen">
+            <DemoDisclaimer 
+              isVisible={showDisclaimer}
+              onDismiss={() => setShowDisclaimer(false)}
+            />
+            <div className={`min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center ${showDisclaimer ? 'pt-16' : ''}`}>
+              <div className="text-center">
+                <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-secondary-600">Підготовка наступного порівняння...</p>
+              </div>
             </div>
           </div>
         );
       }
       
       return (
-        <ComparisonScreen
-          pair={currentPair}
-          progress={progress}
-          onVote={handleVote}
-          onSkip={handleSkip}
-        />
+        <div className="relative min-h-screen">
+          <DemoDisclaimer 
+            isVisible={showDisclaimer}
+            onDismiss={() => setShowDisclaimer(false)}
+          />
+          <div className={showDisclaimer ? 'pt-16' : ''}>
+            <ComparisonScreen
+              pair={currentPair}
+              progress={progress}
+              onVote={handleVote}
+              onSkip={handleSkip}
+            />
+          </div>
+        </div>
       );
 
     case 'results':
       return (
-        <ResultsScreen
-          ranking={personalRating}
-          raterName={session?.fullName || 'Невідомо'}
-          onExportCsv={handleExportPersonal}
-          onRestart={handleRestart}
-        />
+        <div className="relative min-h-screen">
+          <DemoDisclaimer 
+            isVisible={showDisclaimer}
+            onDismiss={() => setShowDisclaimer(false)}
+          />
+          <div className={showDisclaimer ? 'pt-16' : ''}>
+            <ResultsScreen
+              ranking={personalRating}
+              raterName={session?.fullName || 'Невідомо'}
+              onExportCsv={handleExportPersonal}
+              onRestart={handleRestart}
+            />
+          </div>
+        </div>
       );
 
     case 'admin':
       return (
-        <AdminDashboard
-          companyRanking={companyRating}
-          statistics={adminStats}
-          onImportCsv={handleImportCsv}
-          onExportCompanyCsv={handleExportCompany}
-          onRecompute={handleRecomputeRatings}
-          onRefresh={handleRefreshAdmin}
-        />
+        <div className="relative min-h-screen">
+          <DemoDisclaimer 
+            isVisible={showDisclaimer}
+            onDismiss={() => setShowDisclaimer(false)}
+          />
+          <div className={showDisclaimer ? 'pt-16' : ''}>
+            <AdminDashboard
+              companyRanking={companyRating}
+              statistics={adminStats}
+              onImportCsv={handleImportCsv}
+              onExportCompanyCsv={handleExportCompany}
+              onRecompute={handleRecomputeRatings}
+              onRefresh={handleRefreshAdmin}
+            />
+          </div>
+        </div>
       );
 
     default:
