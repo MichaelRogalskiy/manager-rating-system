@@ -44,15 +44,18 @@ export function App() {
 
   // Initialize app
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const adminMode = urlParams.get('admin') === 'true';
-    
-    if (adminMode) {
-      setScreen('admin');
-      loadAdminData();
-    } else if (session) {
-      setScreen('comparing');
-      loadNextPair();
+    // Only access window on client side to prevent hydration mismatch
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const adminMode = urlParams.get('admin') === 'true';
+      
+      if (adminMode) {
+        setScreen('admin');
+        loadAdminData();
+      } else if (session) {
+        setScreen('comparing');
+        loadNextPair();
+      }
     }
   }, [session]);
 
