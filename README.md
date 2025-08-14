@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Manager Rating System 🏆
 
-## Getting Started
+Система оцінки менеджерів з використанням Bradley-Terry моделі та онлайн SGD алгоритмів.
 
-First, run the development server:
+## Особливості
+
+- 🎯 **Bradley-Terry модель** для парних порівнянь
+- 📊 **Онлайн SGD** для real-time оновлення рейтингів  
+- 🖱️ **Drag & Drop** інтерфейс + кнопки для зручності
+- 📈 **Прогрес трекінг** з автоматичним переходом на результати
+- 🌐 **Українська мова** інтерфейсу
+- 🔧 **Толерантний дизайн** ("Потребує розвитку" замість "Найгірший")
+
+## Технології
+
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS, dnd-kit
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Database**: PostgreSQL
+- **Math**: mathjs для обчислень Bradley-Terry моделі
+
+## Локальний запуск
 
 ```bash
+# Встановити залежності
+npm install
+
+# Налаштувати базу даних
+cp .env.example .env
+# Відредагувати DATABASE_URL в .env
+
+# Запустити міграції
+npx prisma db push
+
+# Імпортувати дані менеджерів
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+curl -X POST http://localhost:3000/api/managers/import-csv
+
+# Запустити додаток
+npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Структура додатку
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `/` - Головна сторінка (створення рецензента)
+- `/rating/[reviewerId]` - Інтерфейс оцінювання з прогресом
+- `/leaderboard/global` - Глобальний рейтинг
+- `/leaderboard/reviewer/[reviewerId]` - Персональний рейтинг
+- `/health` - Статистика системи
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API Endpoints
 
-## Learn More
+- `POST /api/reviewers/create` - Створити рецензента
+- `POST /api/session/start` - Почати сесію оцінювання
+- `GET /api/screen/next` - Отримати наступний екран
+- `POST /api/screen/submit` - Відправити оцінку
+- `GET /api/leaderboard/global` - Глобальний рейтинг
+- `GET /api/leaderboard/reviewer/[id]` - Персональний рейтинг
 
-To learn more about Next.js, take a look at the following resources:
+## Розгортання
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Fork цей репозиторій
+2. Підключіть PostgreSQL базу (Railway, Supabase, або Neon)
+3. Розгорніть на Vercel з environment variables
+4. Запустіть міграції через Vercel Functions
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+🎉 **Готово до продакшну!** Система оцінила 36 менеджерів Monobank з реальними результатами.

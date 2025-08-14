@@ -1,0 +1,181 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Менеджери для оцінювання
+model Manager {
+  id       String @id @default(uuid())
+  name     String @unique
+  position String
+  meta     Json?  // Додаткова інформація
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  leftPairs    Pair[] @relation("LeftManager")
+  rightPairs   Pair[] @relation("RightManager")
+  screenShows  ScreenManager[]
+
+  @@map("managers")
+}
+
+// Рецензенти (керівники)
+model Reviewer {
+  id               String  @id @default(uuid())
+  name             String
+  role             String?
+  reliabilityWeight Float  @default(1.0)
+  active           Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sessions      Session[]
+  pairs         Pair[]
+  modelData     ModelReviewer?
+  statsData     StatsReviewer?
+
+  @@map("reviewers")
+}
+
+// Сесії оцінювання
+model Session {
+  id         String      @id @default(uuid())
+  reviewerId String      @map("reviewer_id")
+  startedAt  DateTime    @default(now())
+  status     SessionStatus @default(ACTIVE)
+
+  // Relations
+  reviewer Reviewer @relation(fields: [reviewerId], references: [id])
+  screens  Screen[]
+
+  @@map("sessions")
+}
+
+// Екрани з 7 менеджерами
+model Screen {
+  id              String   @id @default(uuid())
+  sessionId       String   @map("session_id")
+  shownManagerIds String[] @map("shown_manager_ids") // Array of 7 manager IDs
+  isGolden        Boolean  @default(false) // Золотий екран для контролю якості
+  createdAt       DateTime @default(now())
+
+  // Relations
+  session Session          @relation(fields: [sessionId], references: [id])
+  choice  Choice?
+  managers ScreenManager[]
+
+  @@map("screens")
+}
+
+// Проміжна таблиця для менеджерів на екрані
+model ScreenManager {
+  screenId  String
+  managerId String
+  position  Int // позиція на екрані 0-6
+
+  screen  Screen  @relation(fields: [screenId], references: [id])
+  manager Manager @relation(fields: [managerId], references: [id])
+
+  @@id([screenId, managerId])
+  @@map("screen_managers")
+}
+
+// Вибори користувача на екрані
+model Choice {
+  id          String   @id @default(uuid())
+  screenId    String   @unique @map("screen_id")
+  top3Ids     String[] @map("top3_ids") // 3 кращих
+  loserId     String   @map("loser_id") // 1 аутсайдер
+  skippedIds  String[] @map("skipped_ids") // "Не знаю"
+  submittedAt DateTime @default(now())
+
+  // Relations
+  screen Screen @relation(fields: [screenId], references: [id])
+
+  @@map("choices")
+}
+
+// Денормалізована таблиця пар для Bradley-Terry
+model Pair {
+  id             BigInt   @id @default(autoincrement())
+  reviewerId     String   @map("reviewer_id")
+  iId            String   @map("i_id") // winner
+  jId            String   @map("j_id") // loser
+  weight         Float    @default(0.0667) // 1/15 for each screen
+  sourceScreenId String   @map("source_screen_id")
+  createdAt      DateTime @default(now())
+
+  // Relations
+  reviewer    Reviewer @relation(fields: [reviewerId], references: [id])
+  iManager    Manager  @relation("LeftManager", fields: [iId], references: [id])
+  jManager    Manager  @relation("RightManager", fields: [jId], references: [id])
+
+  @@map("pairs")
+}
+
+// Моделі рецензентів (Bradley-Terry параметри)
+model ModelReviewer {
+  reviewerId String   @id @map("reviewer_id")
+  thetaJson  Json     // θ^(r) параметри
+  seJson     Json?    // стандартні похибки
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  reviewer Reviewer @relation(fields: [reviewerId], references: [id])
+
+  @@map("models_reviewer")
+}
+
+// Глобальна модель
+model ModelGlobal {
+  id        String   @id @default("global")
+  muJson    Json     // μ параметри
+  ciLowJson Json     // нижні межі довірчих інтервалів
+  ciHighJson Json    // верхні межі довірчих інтервалів
+  updatedAt DateTime @updatedAt
+
+  @@map("model_global")
+}
+
+// Статистика рецензентів
+model StatsReviewer {
+  reviewerId          String @id @map("reviewer_id")
+  kendallTauToGlobal  Float? @map("kendall_tau_to_global")
+  goldChecksPassed    Int    @default(0)
+  inconsistencyRate   Float  @default(0.0)
+  totalScreens        Int    @default(0)
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  reviewer Reviewer @relation(fields: [reviewerId], references: [id])
+
+  @@map("stats_reviewer")
+}
+
+// Експозиції менеджерів (скільки разів показувався)
+model ManagerExposure {
+  reviewerId String @map("reviewer_id")
+  managerId  String @map("manager_id")
+  count      Int    @default(0)
+  uncertainty Float @default(1.0)
+
+  @@id([reviewerId, managerId])
+  @@map("manager_exposures")
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+}
