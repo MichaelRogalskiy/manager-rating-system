@@ -33,11 +33,11 @@ export async function GET(request: NextRequest) {
     });
 
     // Initialize missing ELO scores
-    const existingManagerIds = new Set(eloScores.map(score => score.managerId));
-    const missingManagers = managers.filter(m => !existingManagerIds.has(m.id));
+    const existingManagerIds = new Set(eloScores.map((score: any) => score.managerId));
+    const missingManagers = managers.filter((m: any) => !existingManagerIds.has(m.id));
     
     if (missingManagers.length > 0) {
-      await Promise.all(missingManagers.map(manager =>
+      await Promise.all(missingManagers.map((manager: any) =>
         prisma.eloScore.create({
           data: {
             raterId: session.raterId,

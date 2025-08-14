@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     let updated = 0;
     let skipped = 0;
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       for (const manager of validManagers) {
         try {
           // Try to upsert manager
