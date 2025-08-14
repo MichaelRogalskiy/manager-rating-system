@@ -201,4 +201,3 @@ npx prisma generate          # Регенерувати Prisma Client
 ## 📄 Ліцензія
 
 MIT License - див. [LICENSE](LICENSE) файл.
-# manager-rating-system

@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Manager {
+  id         String @id @default(uuid())
+  lastName   String @map("last_name")
+  firstName  String @map("first_name")
+  patronymic String
+  position   String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  leftComparisons   Comparison[] @relation("LeftManager")
+  rightComparisons  Comparison[] @relation("RightManager")
+  wonComparisons    Comparison[] @relation("WinnerManager")
+  eloScores         EloScore[]
+  companyScores     CompanyScore[]
+
+  @@map("managers")
+}
+
+model Rater {
+  id        String   @id @default(uuid())
+  fullName  String   @map("full_name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  sessions    RaterSession[]
+  comparisons Comparison[]
+  eloScores   EloScore[]
+
+  @@map("raters")
+}
+
+model RaterSession {
+  id        String   @id @default(uuid())
+  raterId   String   @map("rater_id")
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  rater Rater @relation(fields: [raterId], references: [id], onDelete: Cascade)
+
+  @@map("rater_sessions")
+}
+
+model Comparison {
+  id              BigInt   @id @default(autoincrement())
+  raterId         String   @map("rater_id")
+  leftManagerId   String   @map("left_manager_id")
+  rightManagerId  String   @map("right_manager_id")
+  winnerManagerId String   @map("winner_manager_id")
+  decidedAt       DateTime @default(now()) @map("decided_at")
+
+  // Relations
+  rater         Rater   @relation(fields: [raterId], references: [id], onDelete: Cascade)
+  leftManager   Manager @relation("LeftManager", fields: [leftManagerId], references: [id], onDelete: Cascade)
+  rightManager  Manager @relation("RightManager", fields: [rightManagerId], references: [id], onDelete: Cascade)
+  winnerManager Manager @relation("WinnerManager", fields: [winnerManagerId], references: [id], onDelete: Cascade)
+
+  @@unique([raterId, leftManagerId, rightManagerId])
+  @@map("comparisons")
+}
+
+model EloScore {
+  raterId   String @map("rater_id")
+  managerId String @map("manager_id")
+  rating    Float
+  games     Int    @default(0)
+
+  // Relations
+  rater   Rater   @relation(fields: [raterId], references: [id], onDelete: Cascade)
+  manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@id([raterId, managerId])
+  @@map("elo_scores")
+}
+
+model CompanyScore {
+  managerId String   @id @map("manager_id")
+  rating    Float
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  // Relations
+  manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@map("company_scores")
+}
