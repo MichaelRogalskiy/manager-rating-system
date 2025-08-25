@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,165 +7,135 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Менеджери для оцінювання
 model Manager {
-  id       String @id @default(uuid())
-  name     String @unique
-  position String
-  meta     Json?  // Додаткова інформація
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  leftPairs    Pair[] @relation("LeftManager")
-  rightPairs   Pair[] @relation("RightManager")
-  screenShows  ScreenManager[]
+  id          String          @id @default(uuid())
+  name        String          @unique
+  position    String
+  meta        Json?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  leftPairs   Pair[]          @relation("LeftManager")
+  rightPairs  Pair[]          @relation("RightManager")
+  screenShows ScreenManager[]
 
   @@map("managers")
 }
 
-// Рецензенти (керівники)
 model Reviewer {
-  id               String  @id @default(uuid())
-  name             String
-  role             String?
-  reliabilityWeight Float  @default(1.0)
-  active           Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  sessions      Session[]
-  pairs         Pair[]
-  modelData     ModelReviewer?
-  statsData     StatsReviewer?
+  id                String         @id @default(uuid())
+  name              String
+  role              String?
+  reliabilityWeight Float          @default(1.0)
+  active            Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  modelData         ModelReviewer?
+  pairs             Pair[]
+  sessions          Session[]
+  statsData         StatsReviewer?
 
   @@map("reviewers")
 }
 
-// Сесії оцінювання
 model Session {
-  id         String      @id @default(uuid())
-  reviewerId String      @map("reviewer_id")
-  startedAt  DateTime    @default(now())
+  id         String        @id @default(uuid())
+  reviewerId String        @map("reviewer_id")
+  startedAt  DateTime      @default(now())
   status     SessionStatus @default(ACTIVE)
-
-  // Relations
-  reviewer Reviewer @relation(fields: [reviewerId], references: [id])
-  screens  Screen[]
+  screens    Screen[]
+  reviewer   Reviewer      @relation(fields: [reviewerId], references: [id])
 
   @@map("sessions")
 }
 
-// Екрани з 7 менеджерами
 model Screen {
-  id              String   @id @default(uuid())
-  sessionId       String   @map("session_id")
-  shownManagerIds String[] @map("shown_manager_ids") // Array of 7 manager IDs
-  isGolden        Boolean  @default(false) // Золотий екран для контролю якості
-  createdAt       DateTime @default(now())
-
-  // Relations
-  session Session          @relation(fields: [sessionId], references: [id])
-  choice  Choice?
-  managers ScreenManager[]
+  id              String          @id @default(uuid())
+  sessionId       String          @map("session_id")
+  shownManagerIds String[]        @map("shown_manager_ids")
+  isGolden        Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  choice          Choice?
+  managers        ScreenManager[]
+  session         Session         @relation(fields: [sessionId], references: [id])
 
   @@map("screens")
 }
 
-// Проміжна таблиця для менеджерів на екрані
 model ScreenManager {
   screenId  String
   managerId String
-  position  Int // позиція на екрані 0-6
-
-  screen  Screen  @relation(fields: [screenId], references: [id])
-  manager Manager @relation(fields: [managerId], references: [id])
+  position  Int
+  manager   Manager @relation(fields: [managerId], references: [id])
+  screen    Screen  @relation(fields: [screenId], references: [id])
 
   @@id([screenId, managerId])
   @@map("screen_managers")
 }
 
-// Вибори користувача на екрані
 model Choice {
   id          String   @id @default(uuid())
   screenId    String   @unique @map("screen_id")
-  top3Ids     String[] @map("top3_ids") // 3 кращих
-  loserId     String   @map("loser_id") // 1 аутсайдер
-  skippedIds  String[] @map("skipped_ids") // "Не знаю"
+  top3Ids     String[] @map("top3_ids")
+  loserId     String   @map("loser_id")
+  skippedIds  String[] @map("skipped_ids")
   submittedAt DateTime @default(now())
-
-  // Relations
-  screen Screen @relation(fields: [screenId], references: [id])
+  screen      Screen   @relation(fields: [screenId], references: [id])
 
   @@map("choices")
 }
 
-// Денормалізована таблиця пар для Bradley-Terry
 model Pair {
   id             BigInt   @id @default(autoincrement())
   reviewerId     String   @map("reviewer_id")
-  iId            String   @map("i_id") // winner
-  jId            String   @map("j_id") // loser
-  weight         Float    @default(0.0667) // 1/15 for each screen
+  iId            String   @map("i_id")
+  jId            String   @map("j_id")
+  weight         Float    @default(0.0667)
   sourceScreenId String   @map("source_screen_id")
   createdAt      DateTime @default(now())
-
-  // Relations
-  reviewer    Reviewer @relation(fields: [reviewerId], references: [id])
-  iManager    Manager  @relation("LeftManager", fields: [iId], references: [id])
-  jManager    Manager  @relation("RightManager", fields: [jId], references: [id])
+  iManager       Manager  @relation("LeftManager", fields: [iId], references: [id])
+  jManager       Manager  @relation("RightManager", fields: [jId], references: [id])
+  reviewer       Reviewer @relation(fields: [reviewerId], references: [id])
 
   @@map("pairs")
 }
 
-// Моделі рецензентів (Bradley-Terry параметри)
 model ModelReviewer {
   reviewerId String   @id @map("reviewer_id")
-  thetaJson  Json     // θ^(r) параметри
-  seJson     Json?    // стандартні похибки
+  thetaJson  Json
+  seJson     Json?
   updatedAt  DateTime @updatedAt
-
-  // Relations
-  reviewer Reviewer @relation(fields: [reviewerId], references: [id])
+  reviewer   Reviewer @relation(fields: [reviewerId], references: [id])
 
   @@map("models_reviewer")
 }
 
-// Глобальна модель
 model ModelGlobal {
-  id        String   @id @default("global")
-  muJson    Json     // μ параметри
-  ciLowJson Json     // нижні межі довірчих інтервалів
-  ciHighJson Json    // верхні межі довірчих інтервалів
-  updatedAt DateTime @updatedAt
+  id         String   @id @default("global")
+  muJson     Json
+  ciLowJson  Json
+  ciHighJson Json
+  updatedAt  DateTime @updatedAt
 
   @@map("model_global")
 }
 
-// Статистика рецензентів
 model StatsReviewer {
-  reviewerId          String @id @map("reviewer_id")
-  kendallTauToGlobal  Float? @map("kendall_tau_to_global")
-  goldChecksPassed    Int    @default(0)
-  inconsistencyRate   Float  @default(0.0)
-  totalScreens        Int    @default(0)
-  updatedAt           DateTime @updatedAt
-
-  // Relations
-  reviewer Reviewer @relation(fields: [reviewerId], references: [id])
+  reviewerId         String   @id @map("reviewer_id")
+  kendallTauToGlobal Float?   @map("kendall_tau_to_global")
+  goldChecksPassed   Int      @default(0)
+  inconsistencyRate  Float    @default(0.0)
+  totalScreens       Int      @default(0)
+  updatedAt          DateTime @updatedAt
+  reviewer           Reviewer @relation(fields: [reviewerId], references: [id])
 
   @@map("stats_reviewer")
 }
 
-// Експозиції менеджерів (скільки разів показувався)
 model ManagerExposure {
-  reviewerId String @map("reviewer_id")
-  managerId  String @map("manager_id")
-  count      Int    @default(0)
-  uncertainty Float @default(1.0)
+  reviewerId  String @map("reviewer_id")
+  managerId   String @map("manager_id")
+  count       Int    @default(0)
+  uncertainty Float  @default(1.0)
 
   @@id([reviewerId, managerId])
   @@map("manager_exposures")
