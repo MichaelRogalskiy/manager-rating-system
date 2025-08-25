@@ -67,6 +67,29 @@ export default function HomePage() {
             totalScreens: statsData.system?.totalScreens || 0,
             activeReviewers: statsData.system?.activeReviewers || 0,
           });
+          
+          // Якщо менеджерів немає, автоматично завантажуємо базові дані
+          if (statsData.system?.totalManagers === 0) {
+            try {
+              const seedResponse = await fetch('/api/managers/seed', { method: 'POST' });
+              if (seedResponse.ok) {
+                console.log('Автоматично завантажено базові дані менеджерів');
+                // Оновлюємо статистику після завантаження
+                const updatedStatsResponse = await fetch('/api/health');
+                if (updatedStatsResponse.ok) {
+                  const updatedStats = await updatedStatsResponse.json();
+                  setStats({
+                    totalReviewers: updatedStats.system?.totalReviewers || 0,
+                    totalManagers: updatedStats.system?.totalManagers || 0,
+                    totalScreens: updatedStats.system?.totalScreens || 0,
+                    activeReviewers: updatedStats.system?.activeReviewers || 0,
+                  });
+                }
+              }
+            } catch (seedError) {
+              console.log('Не вдалося автоматично завантажити дані:', seedError);
+            }
+          }
         } else {
           // Якщо не вдалося завантажити статистику, ставимо базові значення
           setStats({
